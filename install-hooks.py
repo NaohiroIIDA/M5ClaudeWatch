@@ -16,11 +16,8 @@ HOOK = ROOT / "host" / "m5claudewatch_hook.py"
 TEMPLATE = ROOT / "hooks" / "settings.example.json"
 
 
-HOOK_NAMES = ("m5claudewatch_hook.py", "ccwatch_hook.py")  # include the pre-rename name
-
-
 def is_ours(group):
-    return any(name in h.get("command", "") for h in group.get("hooks", []) for name in HOOK_NAMES)
+    return any(HOOK.name in h.get("command", "") for h in group.get("hooks", []))
 
 
 def main():

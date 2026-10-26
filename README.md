@@ -4,7 +4,7 @@ M5Stack StopWatch を Claude Code の手元コンパニオンにするツール�
 [GOROman/vibewatch](https://github.com/GOROman/vibewatch) に触発されて作ったもので、Claude Code の hooks に直結しています。
 
 - **作業中**: 青いリングが回転し、経過時間をストップウォッチ表示
-- **完了**: 振動と効果音で通知し、所要時間と Claude の最後のメッセージを表示
+- **完了**: 振動で通知し、所要時間と Claude の最後のメッセージを表示
 - **返答待ち**: Claude の最後のメッセージが質問や依頼（「〜しますか？」「〜してください」など）で終わったら、黄色の画面と3回の短い振動で知らせ、その質問部分を表示
 - **入力待ち**: Claude が入力を待っているときに通知
 - **承認リクエスト**: ツール名と内容（コマンドやファイル名）を表示し、**OK / NG** をボタンまたはタッチで返す
@@ -17,6 +17,14 @@ M5Stack StopWatch を Claude Code の手元コンパニオンにするツール�
 Claude Code ──hooks──▶ m5claudewatch_hook.py ──Unix socket──▶ m5claudewatch_bridge.py ──BLE / USB──▶ StopWatch
                       (標準ライブラリのみ)               (常駐、bleak)                      (firmware/)
 ```
+
+## 必要なもの
+
+- [M5Stack StopWatch](https://docs.m5stack.com/)（ESP32-S3、466×466 円形ディスプレイ）
+- macOS（ブリッジの自動起動に launchd、hook の実行に `/usr/bin/python3` を使います）
+- [PlatformIO](https://platformio.org/)（ファームウェアの書き込み）
+- [uv](https://docs.astral.sh/uv/)（ブリッジの実行。依存パッケージ bleak / pyserial は自動で入ります）
+- Claude Code
 
 ## 構成
 
@@ -78,6 +86,10 @@ launchd から起動した場合、ターミナルとは別に Bluetooth の許�
 | `M5CLAUDEWATCH_PERM_TIMEOUT` | `110` | 時計の回答を待つ秒数。過ぎると PC のダイアログに切り替える（hook の timeout 120 秒より短くすること） |
 | `M5CLAUDEWATCH_SOCKET` | `~/.claude/m5claudewatch.sock` | ブリッジのソケットのパス |
 
+どちらも hook（Claude Code を起動するシェル）とブリッジの両方で同じ値にしてください。launchd から起動したブリッジにはシェルの環境変数が渡らないため、待ち時間を変えるときは `./install-launchd.sh --perm-timeout 60` のように引数で渡します。
+
+効果音を鳴らしたい場合は [firmware/src/main.cpp](firmware/src/main.cpp) の `kSoundEnabled` を `true` にして書き込み直してください（既定は振動のみ）。
+
 ## 通信プロトコル
 
 改行区切りの JSON を Nordic UART 互換の GATT サービス（`6E400001-…`）または USB シリアル（115200bps）で送ります。
@@ -87,3 +99,7 @@ launchd から起動した場合、ターミナルとは別に Bluetooth の許�
 
 - 承認待ちのあいだ、PC 側のダイアログが同時に出るかどうかは Claude Code のバージョンによって異なる可能性があります。時計で答えられないときは長押しで PC 側に回してください。
 - BLE は現状ペアリング（暗号化）なしです。ブリッジは保存したアドレスの時計にしか接続しませんが、より厳密にしたい場合は USB シリアルで使ってください。
+
+## ライセンス
+
+[MIT](LICENSE)
