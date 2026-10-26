@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Claude Code hook that forwards events to the CC Watch bridge.
+"""Claude Code hook that forwards events to the M5ClaudeWatch bridge.
 
 Register it for UserPromptSubmit, Stop, Notification, PermissionRequest and
 SessionEnd (see hooks/settings.example.json). Stdlib only, Python 3.9+.
@@ -12,8 +12,8 @@ import os
 import socket
 import sys
 
-SOCKET_PATH = os.environ.get("CCWATCH_SOCKET", os.path.expanduser("~/.claude/ccwatch.sock"))
-PERM_WAIT = float(os.environ.get("CCWATCH_PERM_TIMEOUT", "110")) + 5
+SOCKET_PATH = os.environ.get("M5CLAUDEWATCH_SOCKET", os.path.expanduser("~/.claude/m5claudewatch.sock"))
+PERM_WAIT = float(os.environ.get("M5CLAUDEWATCH_PERM_TIMEOUT", "110")) + 5
 DETAIL_MAX = 400
 MSG_MAX = 300
 
@@ -111,7 +111,7 @@ def main():
     if decision == "allow":
         out = {"behavior": "allow"}
     elif decision == "deny":
-        out = {"behavior": "deny", "message": "ユーザーがCC Watchで拒否しました。指示を待ってください。",
+        out = {"behavior": "deny", "message": "ユーザーがM5ClaudeWatchで拒否しました。指示を待ってください。",
                "interrupt": True}
     else:
         return  # no decision: Claude Code shows its normal prompt

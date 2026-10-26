@@ -3,13 +3,13 @@
 # requires-python = ">=3.10"
 # dependencies = ["bleak>=0.22", "pyserial>=3.5"]
 # ///
-"""CC Watch bridge: relays Claude Code hook events to the M5Stack StopWatch.
+"""M5ClaudeWatch bridge: relays Claude Code hook events to the M5Stack StopWatch.
 
-Hooks (ccwatch_hook.py) connect to a Unix socket and send one JSON line.
+Hooks (m5claudewatch_hook.py) connect to a Unix socket and send one JSON line.
 Permission requests stay connected until the watch answers OK / NG.
 
-    uv run host/ccwatch_bridge.py                 # BLE (auto-discover "CC Watch")
-    uv run host/ccwatch_bridge.py --serial /dev/cu.usbmodem1101
+    uv run host/m5claudewatch_bridge.py                 # BLE (auto-discover "M5ClaudeWatch")
+    uv run host/m5claudewatch_bridge.py --serial /dev/cu.usbmodem1101
 """
 
 from __future__ import annotations
@@ -26,14 +26,14 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-SOCKET_PATH = Path(os.environ.get("CCWATCH_SOCKET", Path.home() / ".claude" / "ccwatch.sock"))
-CONFIG_PATH = Path.home() / ".config" / "ccwatch" / "config.json"
+SOCKET_PATH = Path(os.environ.get("M5CLAUDEWATCH_SOCKET", Path.home() / ".claude" / "m5claudewatch.sock"))
+CONFIG_PATH = Path.home() / ".config" / "m5claudewatch" / "config.json"
 SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
 RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"  # host -> device (write)
 TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"  # device -> host (notify)
-DEVICE_NAME = "CC Watch"
+DEVICE_NAME = "M5ClaudeWatch"
 
-log = logging.getLogger("ccwatch")
+log = logging.getLogger("m5claudewatch")
 
 
 @dataclass
@@ -341,7 +341,7 @@ async def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--serial", help="use USB serial port instead of BLE")
     ap.add_argument("--address", help="BLE address/UUID of the watch (saved after first connect)")
-    ap.add_argument("--perm-timeout", type=float, default=float(os.environ.get("CCWATCH_PERM_TIMEOUT", 110)),
+    ap.add_argument("--perm-timeout", type=float, default=float(os.environ.get("M5CLAUDEWATCH_PERM_TIMEOUT", 110)),
                     help="seconds to wait for OK/NG before falling back to the terminal prompt")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()

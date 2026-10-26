@@ -1,6 +1,6 @@
-// CC Watch: Claude Code companion for M5Stack StopWatch.
+// M5ClaudeWatch: Claude Code companion for M5Stack StopWatch.
 //
-// The host bridge (host/ccwatch_bridge.py) talks to this firmware with
+// The host bridge (host/m5claudewatch_bridge.py) talks to this firmware with
 // newline-delimited JSON over BLE (Nordic UART compatible service) or USB
 // serial. Host -> device messages:
 //   {"t":"busy","proj":"app","el":12,"n":1}     Claude is working (el = elapsed s)
@@ -28,7 +28,7 @@
 
 namespace {
 
-constexpr char kDeviceName[] = "CC Watch";
+constexpr char kDeviceName[] = "M5ClaudeWatch";
 constexpr char kFirmwareVersion[] = "0.1.0";
 constexpr char kServiceUuid[] = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
 constexpr char kRxUuid[] = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
@@ -274,10 +274,16 @@ void initBle() {
     rx->setCallbacks(&g_rxCallbacks);
     service->start();
 
+    // Flags + 128-bit UUID + the 13-char name exceed the 31-byte advertising
+    // payload, so the name goes in the scan response.
+    NimBLEAdvertisementData advData;
+    advData.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
+    advData.addServiceUUID(NimBLEUUID(kServiceUuid));
+    NimBLEAdvertisementData scanData;
+    scanData.setName(kDeviceName);
     NimBLEAdvertising* advertising = NimBLEDevice::getAdvertising();
-    advertising->setName(kDeviceName);
-    advertising->addServiceUUID(kServiceUuid);
-    advertising->enableScanResponse(true);
+    advertising->setAdvertisementData(advData);
+    advertising->setScanResponseData(scanData);
     advertising->start();
 }
 
@@ -704,7 +710,7 @@ void updateBattery(std::uint32_t now) {
 
 void showSplash() {
     canvas.fillScreen(kColBg);
-    drawLabel("CC Watch", kCy - 10, kColClaude, &fonts::FreeSansBold24pt7b);
+    drawLabel("M5ClaudeWatch", kCy - 10, kColClaude, &fonts::FreeSansBold24pt7b);
     drawLabel(kFirmwareVersion, kCy + 40, kColSub, &fonts::FreeSans12pt7b);
     canvas.pushSprite(0, 0);
     play({{523, 80}, {784, 80}, {1046, 120}});

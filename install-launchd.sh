@@ -1,16 +1,20 @@
 #!/bin/sh
-# Run the CC Watch bridge at login via launchd.
+# Run the M5ClaudeWatch bridge at login via launchd.
 #   ./install-launchd.sh                      # BLE
 #   ./install-launchd.sh --serial /dev/cu.usbmodem1101
 #   ./install-launchd.sh --uninstall
 set -eu
 
-LABEL=com.ccwatch.bridge
+LABEL=com.m5claudewatch.bridge
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-LOG="$HOME/Library/Logs/ccwatch-bridge.log"
+LOG="$HOME/Library/Logs/m5claudewatch-bridge.log"
 ROOT=$(cd "$(dirname "$0")" && pwd)
 
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
+# Remove the agent installed before the rename to M5ClaudeWatch.
+LEGACY=com.ccwatch.bridge
+launchctl bootout "gui/$(id -u)/$LEGACY" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/$LEGACY.plist"
 if [ "${1:-}" = "--uninstall" ]; then
     rm -f "$PLIST"
     echo "removed $LABEL"
@@ -34,7 +38,7 @@ cat > "$PLIST" <<EOF
     <array>
         <string>$UV</string>
         <string>run</string>
-        <string>$ROOT/host/ccwatch_bridge.py</string>$EXTRA
+        <string>$ROOT/host/m5claudewatch_bridge.py</string>$EXTRA
     </array>
     <key>RunAtLoad</key>
     <true/>

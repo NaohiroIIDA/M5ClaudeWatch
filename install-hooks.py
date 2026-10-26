@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge CC Watch hooks into a Claude Code settings.json (default: ~/.claude/settings.json).
+"""Merge M5ClaudeWatch hooks into a Claude Code settings.json (default: ~/.claude/settings.json).
 
     python3 install-hooks.py            # user settings (all projects)
     python3 install-hooks.py --uninstall
@@ -12,12 +12,15 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-HOOK = ROOT / "host" / "ccwatch_hook.py"
+HOOK = ROOT / "host" / "m5claudewatch_hook.py"
 TEMPLATE = ROOT / "hooks" / "settings.example.json"
 
 
+HOOK_NAMES = ("m5claudewatch_hook.py", "ccwatch_hook.py")  # include the pre-rename name
+
+
 def is_ours(group):
-    return any("ccwatch_hook.py" in h.get("command", "") for h in group.get("hooks", []))
+    return any(name in h.get("command", "") for h in group.get("hooks", []) for name in HOOK_NAMES)
 
 
 def main():

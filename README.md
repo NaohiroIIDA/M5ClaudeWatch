@@ -13,7 +13,7 @@ M5Stack StopWatch を Claude Code の手元コンパニオンにするツール�
   - 未回答のあいだは 30 秒ごとに再通知
 
 ```
-Claude Code ──hooks──▶ ccwatch_hook.py ──Unix socket──▶ ccwatch_bridge.py ──BLE / USB──▶ StopWatch
+Claude Code ──hooks──▶ m5claudewatch_hook.py ──Unix socket──▶ m5claudewatch_bridge.py ──BLE / USB──▶ StopWatch
                       (標準ライブラリのみ)               (常駐、bleak)                      (firmware/)
 ```
 
@@ -22,8 +22,8 @@ Claude Code ──hooks──▶ ccwatch_hook.py ──Unix socket──▶ ccwa
 | パス | 内容 |
 |---|---|
 | `firmware/` | StopWatch 用ファームウェア（PlatformIO / M5Unified / NimBLE） |
-| `host/ccwatch_bridge.py` | Mac で常駐するブリッジ。時計と BLE（またはシリアル）でつながる |
-| `host/ccwatch_hook.py` | Claude Code の hook から呼ばれるスクリプト |
+| `host/m5claudewatch_bridge.py` | Mac で常駐するブリッジ。時計と BLE（またはシリアル）でつながる |
+| `host/m5claudewatch_hook.py` | Claude Code の hook から呼ばれるスクリプト |
 | `hooks/settings.example.json` | hooks の設定テンプレート |
 | `install-hooks.py` | hooks を `~/.claude/settings.json` にマージする |
 | `install-launchd.sh` | ブリッジをログイン時に自動起動する |
@@ -42,13 +42,13 @@ pio run -e m5stack-stopwatch --target upload
 ### 2. ブリッジを起動する
 
 ```sh
-uv run host/ccwatch_bridge.py          # BLE。"CC Watch" を自動で見つけて接続
+uv run host/m5claudewatch_bridge.py          # BLE。"M5ClaudeWatch" を自動で見つけて接続
 # または USB 接続のまま使う場合
-uv run host/ccwatch_bridge.py --serial /dev/cu.usbmodemXXXX
+uv run host/m5claudewatch_bridge.py --serial /dev/cu.usbmodemXXXX
 ```
 
 初回だけ、ターミナルアプリへの Bluetooth アクセス許可を macOS が求めます。
-接続した時計のアドレスは `~/.config/ccwatch/config.json` に保存され、以降はその時計にだけ接続します。
+接続した時計のアドレスは `~/.config/m5claudewatch/config.json` に保存され、以降はその時計にだけ接続します。
 
 ### 3. hooks を登録する
 
@@ -64,7 +64,7 @@ python3 install-hooks.py --uninstall   # 削除
 ```sh
 ./install-launchd.sh                   # BLE（--serial PORT も渡せる）
 ./install-launchd.sh --uninstall       # 解除
-tail -f ~/Library/Logs/ccwatch-bridge.log
+tail -f ~/Library/Logs/m5claudewatch-bridge.log
 ```
 
 launchd から起動した場合、ターミナルとは別に Bluetooth の許可が必要になることがあります。ログに `watch connected` が出ないときは「システム設定 > プライバシーとセキュリティ > Bluetooth」を確認してください。
@@ -74,8 +74,8 @@ launchd から起動した場合、ターミナルとは別に Bluetooth の許�
 
 | 環境変数 | 既定値 | 意味 |
 |---|---|---|
-| `CCWATCH_PERM_TIMEOUT` | `110` | 時計の回答を待つ秒数。過ぎると PC のダイアログに切り替える（hook の timeout 120 秒より短くすること） |
-| `CCWATCH_SOCKET` | `~/.claude/ccwatch.sock` | ブリッジのソケットのパス |
+| `M5CLAUDEWATCH_PERM_TIMEOUT` | `110` | 時計の回答を待つ秒数。過ぎると PC のダイアログに切り替える（hook の timeout 120 秒より短くすること） |
+| `M5CLAUDEWATCH_SOCKET` | `~/.claude/m5claudewatch.sock` | ブリッジのソケットのパス |
 
 ## 通信プロトコル
 
