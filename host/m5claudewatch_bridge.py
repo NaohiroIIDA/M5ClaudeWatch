@@ -42,6 +42,7 @@ class Session:
     state: str = "idle"  # busy / done / notice / idle
     since: float = field(default_factory=time.monotonic)
     msg: str = ""
+    ask: bool = False  # the finished turn ended with a question to the user
     updated: float = field(default_factory=time.monotonic)
 
 
@@ -86,6 +87,8 @@ class Bridge:
         elif s.state in ("done", "notice"):
             msg["t"] = "done" if s.state == "done" else "notify"
             msg["msg"] = s.msg
+            if s.ask:
+                msg["ask"] = True
             if quiet:
                 msg["quiet"] = True
         return msg
@@ -152,11 +155,11 @@ class Bridge:
             await self.cancel_session_perms(sid)
         elif ev == "done":
             el = int(time.monotonic() - s.since) if s.state == "busy" else 0
-            s.state, s.msg = "done", req.get("msg", "")
+            s.state, s.msg, s.ask = "done", req.get("msg", ""), bool(req.get("ask"))
             s.since = time.monotonic()
             await self.cancel_session_perms(sid)
             await self.send({"t": "done", "proj": proj, "msg": s.msg, "el": el,
-                             "n": self.working_count()})
+                             "ask": s.ask, "n": self.working_count()})
             return
         elif ev == "notify":
             s.state, s.msg = "notice", req.get("msg", "")

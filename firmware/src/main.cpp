@@ -4,7 +4,8 @@
 // newline-delimited JSON over BLE (Nordic UART compatible service) or USB
 // serial. Host -> device messages:
 //   {"t":"busy","proj":"app","el":12,"n":1}     Claude is working (el = elapsed s)
-//   {"t":"done","proj":"app","msg":"...","el":80,"n":0}
+//   {"t":"done","proj":"app","msg":"...","el":80,"n":0}   (+"ask":true if the
+//                                                 turn ended with a question)
 //   {"t":"perm","id":"3","proj":"app","tool":"Bash","detail":"rm -rf x"}
 //   {"t":"cancel","id":"3"}                       request resolved elsewhere
 //   {"t":"notify","proj":"app","msg":"..."}      Claude waits for input
@@ -89,6 +90,7 @@ std::string g_serialLine;  // only touched from loop()
 Mode g_mode = Mode::Idle;
 std::string g_project;
 std::string g_message;
+std::string g_noticeTitle = "入力待ち";
 std::uint32_t g_workStartedAt = 0;
 std::uint32_t g_doneDurationMs = 0;
 int g_othersWorking = 0;
@@ -184,6 +186,12 @@ void feedbackPermArrived() {
 void feedbackDone() {
     vibrate({{200, 250, 120}, {200, 90, 0}});
     play({{784, 90}, {1046, 90}, {1318, 160}});
+}
+
+// Claude finished its turn by asking the user something.
+void feedbackReply() {
+    vibrate({{200, 70, 80}, {200, 70, 80}, {200, 70, 0}});
+    play({{988, 70}, {0, 50}, {988, 70}, {0, 50}, {1318, 120}});
 }
 
 void feedbackNotice() {
@@ -368,17 +376,20 @@ void handleMessage(const char* line) {
         g_doneDurationMs = doc["el"].is<int>()
                                ? static_cast<std::uint32_t>(doc["el"].as<int>()) * 1000U
                                : (g_mode == Mode::Working ? now - g_workStartedAt : 0);
-        g_mode = Mode::Done;
+        const bool ask = doc["ask"] | false;
+        g_mode = ask ? Mode::Notice : Mode::Done;
+        g_noticeTitle = "返答待ち";
         g_project = doc["proj"] | "";
         g_message = doc["msg"] | "";
         if (!(doc["quiet"] | false)) {
-            feedbackDone();
+            ask ? feedbackReply() : feedbackDone();
         }
         wake();
         return;
     }
     if (std::strcmp(type, "notify") == 0) {
         g_mode = Mode::Notice;
+        g_noticeTitle = "入力待ち";
         g_project = doc["proj"] | "";
         g_message = doc["msg"] | "";
         if (!(doc["quiet"] | false)) {
@@ -569,7 +580,7 @@ void drawNotice(std::uint32_t now) {
     canvas.fillArc(kCx, kCy, 220, 232, 0, 360,
                    rgb(static_cast<std::uint8_t>(120 + 120 * pulse),
                        static_cast<std::uint8_t>(100 + 100 * pulse), 30));
-    drawLabel("入力待ち", 96, kColAsk, &fonts::lgfxJapanGothicP_32);
+    drawLabel(g_noticeTitle.c_str(), 96, kColAsk, &fonts::lgfxJapanGothicP_32);
     drawLabel(g_project.c_str(), 140, kColSub, &fonts::lgfxJapanGothicP_20);
     canvas.setFont(&fonts::lgfxJapanGothicP_20);
     drawWrapped(g_message, 185, 340, 6, 27, kColText);

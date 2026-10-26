@@ -9,6 +9,7 @@ behaves exactly as without the watch.
 
 import json
 import os
+import re
 import socket
 import sys
 
@@ -21,6 +22,38 @@ MSG_MAX = 300
 def clip(text, limit):
     text = str(text).strip()
     return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+# A line that ends by asking the user something (question or request).
+ASK_LINE = re.compile(
+    r"([?？]|ますか|でしょうか|ませんか|ください|下さい|お願いします|教えて|いただけますか)"
+    r"[。．.!！）)」]*$"
+)
+
+
+def plain(text):
+    """Strip markdown that the watch would show literally."""
+    text = re.sub(r"```.*?```", "", text, flags=re.S)
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"[*_`#>|]+", "", text)
+    return "\n".join(line.strip(" -") for line in text.splitlines() if line.strip(" -"))
+
+
+def last_paragraph(text):
+    paragraphs = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
+    return paragraphs[-1] if paragraphs else ""
+
+
+def asks_user(text):
+    """True when the turn ended with a question or a request to the user."""
+    return any(ASK_LINE.search(line) for line in plain(last_paragraph(text)).splitlines())
+
+
+def stop_request(base, message):
+    if asks_user(message):
+        # Show the question itself rather than the start of the reply.
+        return dict(base, ev="done", ask=True, msg=clip(plain(last_paragraph(message)), MSG_MAX))
+    return dict(base, ev="done", msg=clip(plain(message), MSG_MAX))
 
 
 def describe_tool(name, tool_input):
@@ -56,7 +89,7 @@ def build_request(data):
     if event == "UserPromptSubmit":
         return dict(base, ev="busy")
     if event == "Stop":
-        return dict(base, ev="done", msg=clip(data.get("last_assistant_message") or "", MSG_MAX))
+        return stop_request(base, data.get("last_assistant_message") or "")
     if event == "Notification":
         kind = data.get("notification_type", "")
         if kind == "permission_prompt":
