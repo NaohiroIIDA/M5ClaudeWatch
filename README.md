@@ -3,6 +3,8 @@
 M5Stack StopWatch を Claude Code の手元コンパニオンにするツール。
 [GOROman/vibewatch](https://github.com/GOROman/vibewatch) に触発されて作ったもので、Claude Code の hooks に直結しています。
 
+> Anthropic とは関係のない非公式プロジェクトです。
+
 - **作業中**: 青いリングが回転し、経過時間をストップウォッチ表示
 - **完了**: 振動で通知し、所要時間と Claude の最後のメッセージを表示
 - **返答待ち**: Claude の最後のメッセージが質問や依頼（「〜しますか？」「〜してください」など）で終わったら、黄色の画面と3回の短い振動で知らせ、その質問部分を表示
@@ -103,3 +105,5 @@ launchd から起動した場合、ターミナルとは別に Bluetooth の許�
 ## ライセンス
 
 [MIT](LICENSE)
+
+[firmware/platformio.ini](firmware/platformio.ini) のボード設定は [GOROman/vibewatch](https://github.com/GOROman/vibewatch)（MIT License, Copyright (c) 2026 GOROman）を元にしています。
