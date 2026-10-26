@@ -15,6 +15,10 @@ M5Stack StopWatch を Claude Code の手元コンパニオンにするツール�
   - どちらかを長押し → 時計では答えず、PC のいつものダイアログで確認
   - 未回答のあいだは 30 秒ごとに再通知
 
+| 待機中 | 完了 | 返答待ち | 承認リクエスト |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/images/idle.jpg" width="200" alt="待機中の画面"> | <img src="docs/images/done.jpg" width="200" alt="完了画面。所要時間と Claude の最後のメッセージ"> | <img src="docs/images/reply.jpg" width="200" alt="返答待ちの画面。Claude の質問を表示"> | <img src="docs/images/permission.jpg" width="200" alt="承認リクエストの画面。OK / NG ボタン"> |
+
 ```
 Claude Code ──hooks──▶ m5claudewatch_hook.py ──Unix socket──▶ m5claudewatch_bridge.py ──BLE / USB──▶ StopWatch
                       (標準ライブラリのみ)               (常駐、bleak)                      (firmware/)
