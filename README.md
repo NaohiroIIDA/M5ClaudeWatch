@@ -1,113 +1,117 @@
 # M5ClaudeWatch
 
-M5Stack StopWatch を Claude Code の手元コンパニオンにするツール。
-[GOROman/vibewatch](https://github.com/GOROman/vibewatch) に触発されて作ったもので、Claude Code の hooks に直結しています。
+**English** | [日本語](README.ja.md)
 
-> Anthropic とは関係のない非公式プロジェクトです。
+Turns an M5Stack StopWatch into a desk companion for Claude Code.
+Inspired by [GOROman/vibewatch](https://github.com/GOROman/vibewatch), and wired directly into Claude Code hooks.
 
-- **作業中**: 青いリングが回転し、経過時間をストップウォッチ表示
-- **完了**: 振動で通知し、所要時間と Claude の最後のメッセージを表示
-- **返答待ち**: Claude の最後のメッセージが質問や依頼（「〜しますか？」「〜してください」など）で終わったら、黄色の画面と3回の短い振動で知らせ、その質問部分を表示
-- **入力待ち**: Claude が入力を待っているときに通知
-- **承認リクエスト**: ツール名と内容（コマンドやファイル名）を表示し、**OK / NG** をボタンまたはタッチで返す
-  - 左ボタン（BtnA）または画面の NG → 拒否（Claude は中断して指示待ちになる）
-  - 右ボタン（BtnB）または画面の OK → 許可
-  - どちらかを長押し → 時計では答えず、PC のいつものダイアログで確認
-  - 未回答のあいだは 30 秒ごとに再通知
+> This is an unofficial project and is not affiliated with Anthropic.
 
-| 待機中 | 完了 | 返答待ち | 承認リクエスト |
+- **Working**: a spinning blue ring and a stopwatch showing elapsed time
+- **Done**: vibrates, then shows how long the turn took and Claude's last message
+- **Waiting for your reply**: when Claude's last message ends with a question or a request, the screen turns yellow, vibrates three short times, and shows the question
+- **Waiting for input**: notifies you when Claude is waiting for input
+- **Permission request**: shows the tool name and what it wants to do (command or file name); answer **OK / NG** with the buttons or the touch screen
+  - Left button (BtnA) or NG on screen → deny (Claude stops and waits for instructions)
+  - Right button (BtnB) or OK on screen → allow
+  - Long-press either button → don't answer on the watch; use the usual dialog on your computer
+  - Re-alerts every 30 seconds until answered
+
+| Idle | Done | Waiting for reply | Permission request |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/images/idle.jpg" width="200" alt="待機中の画面"> | <img src="docs/images/done.jpg" width="200" alt="完了画面。所要時間と Claude の最後のメッセージ"> | <img src="docs/images/reply.jpg" width="200" alt="返答待ちの画面。Claude の質問を表示"> | <img src="docs/images/permission.jpg" width="200" alt="承認リクエストの画面。OK / NG ボタン"> |
+| <img src="docs/images/idle.jpg" width="200" alt="Idle screen"> | <img src="docs/images/done.jpg" width="200" alt="Done screen with elapsed time and Claude's last message"> | <img src="docs/images/reply.jpg" width="200" alt="Waiting-for-reply screen showing Claude's question"> | <img src="docs/images/permission.jpg" width="200" alt="Permission request screen with OK / NG buttons"> |
+
+> **Note:** The watch UI and messages are currently Japanese only. Reply detection works for English questions ending with "?", but not for requests like "Please …". Contributions are welcome.
 
 ```
 Claude Code ──hooks──▶ m5claudewatch_hook.py ──Unix socket──▶ m5claudewatch_bridge.py ──BLE / USB──▶ StopWatch
-                      (標準ライブラリのみ)               (常駐、bleak)                      (firmware/)
+                       (stdlib only)                          (resident, bleak)                       (firmware/)
 ```
 
-## 必要なもの
+## Requirements
 
-- [M5Stack StopWatch](https://docs.m5stack.com/)（ESP32-S3、466×466 円形ディスプレイ）
-- macOS（ブリッジの自動起動に launchd、hook の実行に `/usr/bin/python3` を使います）
-- [PlatformIO](https://platformio.org/)（ファームウェアの書き込み）
-- [uv](https://docs.astral.sh/uv/)（ブリッジの実行。依存パッケージ bleak / pyserial は自動で入ります）
+- [M5Stack StopWatch](https://docs.m5stack.com/) (ESP32-S3, 466×466 round display)
+- macOS (launchd starts the bridge at login; hooks run with `/usr/bin/python3`)
+- [PlatformIO](https://platformio.org/) (to flash the firmware)
+- [uv](https://docs.astral.sh/uv/) (to run the bridge; it installs bleak / pyserial automatically)
 - Claude Code
 
-## 構成
+## Layout
 
-| パス | 内容 |
+| Path | Contents |
 |---|---|
-| `firmware/` | StopWatch 用ファームウェア（PlatformIO / M5Unified / NimBLE） |
-| `host/m5claudewatch_bridge.py` | Mac で常駐するブリッジ。時計と BLE（またはシリアル）でつながる |
-| `host/m5claudewatch_hook.py` | Claude Code の hook から呼ばれるスクリプト |
-| `hooks/settings.example.json` | hooks の設定テンプレート |
-| `install-hooks.py` | hooks を `~/.claude/settings.json` にマージする |
-| `install-launchd.sh` | ブリッジをログイン時に自動起動する |
+| `firmware/` | StopWatch firmware (PlatformIO / M5Unified / NimBLE) |
+| `host/m5claudewatch_bridge.py` | Bridge that runs on your Mac and talks to the watch over BLE (or serial) |
+| `host/m5claudewatch_hook.py` | Script that Claude Code hooks call |
+| `hooks/settings.example.json` | Hook settings template |
+| `install-hooks.py` | Merges the hooks into `~/.claude/settings.json` |
+| `install-launchd.sh` | Starts the bridge automatically at login |
 
-## セットアップ
+## Setup
 
-### 1. ファームウェアを書き込む
+### 1. Flash the firmware
 
-StopWatch を USB-C で接続します。
+Connect the StopWatch over USB-C.
 
 ```sh
 cd firmware
 pio run -e m5stack-stopwatch --target upload
 ```
 
-### 2. ブリッジを起動する
+### 2. Start the bridge
 
 ```sh
-uv run host/m5claudewatch_bridge.py          # BLE。"M5ClaudeWatch" を自動で見つけて接続
-# または USB 接続のまま使う場合
+uv run host/m5claudewatch_bridge.py          # BLE: finds "M5ClaudeWatch" and connects automatically
+# or, to stay connected over USB
 uv run host/m5claudewatch_bridge.py --serial /dev/cu.usbmodemXXXX
 ```
 
-初回だけ、ターミナルアプリへの Bluetooth アクセス許可を macOS が求めます。
-接続した時計のアドレスは `~/.config/m5claudewatch/config.json` に保存され、以降はその時計にだけ接続します。
+The first time, macOS asks to allow Bluetooth access for your terminal app.
+The address of the watch you connect to is saved in `~/.config/m5claudewatch/config.json`; from then on the bridge connects only to that watch.
 
-### 3. hooks を登録する
+### 3. Register the hooks
 
 ```sh
-python3 install-hooks.py               # ~/.claude/settings.json に追加（バックアップ: settings.json.bak）
-python3 install-hooks.py --uninstall   # 削除
+python3 install-hooks.py               # adds to ~/.claude/settings.json (backup: settings.json.bak)
+python3 install-hooks.py --uninstall   # removes them
 ```
 
-登録後に起動した Claude Code セッションから有効になります。
+The hooks take effect in Claude Code sessions started after you register them.
 
-### 4. ブリッジをログイン時に自動起動する（任意）
+### 4. Start the bridge at login (optional)
 
 ```sh
-./install-launchd.sh                   # BLE（--serial PORT も渡せる）
-./install-launchd.sh --uninstall       # 解除
+./install-launchd.sh                   # BLE (you can also pass --serial PORT)
+./install-launchd.sh --uninstall       # remove
 tail -f ~/Library/Logs/m5claudewatch-bridge.log
 ```
 
-launchd から起動した場合、ターミナルとは別に Bluetooth の許可が必要になることがあります。ログに `watch connected` が出ないときは「システム設定 > プライバシーとセキュリティ > Bluetooth」を確認してください。
-**ブリッジが止まっている、または時計が未接続のときは hook は何もしない**ため、Claude Code はいつもどおり動きます。
+When the bridge runs from launchd, it may need its own Bluetooth permission, separate from your terminal's. If `watch connected` never appears in the log, check System Settings > Privacy & Security > Bluetooth.
+**If the bridge is not running or the watch is not connected, the hooks do nothing**, so Claude Code works as usual.
 
-## 設定
+## Configuration
 
-| 環境変数 | 既定値 | 意味 |
+| Environment variable | Default | Meaning |
 |---|---|---|
-| `M5CLAUDEWATCH_PERM_TIMEOUT` | `110` | 時計の回答を待つ秒数。過ぎると PC のダイアログに切り替える（hook の timeout 120 秒より短くすること） |
-| `M5CLAUDEWATCH_SOCKET` | `~/.claude/m5claudewatch.sock` | ブリッジのソケットのパス |
+| `M5CLAUDEWATCH_PERM_TIMEOUT` | `110` | Seconds to wait for an answer on the watch before falling back to the dialog on your computer (keep it below the hook timeout of 120 s) |
+| `M5CLAUDEWATCH_SOCKET` | `~/.claude/m5claudewatch.sock` | Path of the bridge's socket |
 
-どちらも hook（Claude Code を起動するシェル）とブリッジの両方で同じ値にしてください。launchd から起動したブリッジにはシェルの環境変数が渡らないため、待ち時間を変えるときは `./install-launchd.sh --perm-timeout 60` のように引数で渡します。
+Use the same values for the hooks (the shell that launches Claude Code) and for the bridge. A bridge started by launchd does not see your shell's environment variables, so to change the wait time pass it as an argument, e.g. `./install-launchd.sh --perm-timeout 60`.
 
-効果音を鳴らしたい場合は [firmware/src/main.cpp](firmware/src/main.cpp) の `kSoundEnabled` を `true` にして書き込み直してください（既定は振動のみ）。
+To enable sound effects, set `kSoundEnabled` to `true` in [firmware/src/main.cpp](firmware/src/main.cpp) and flash again (the default is vibration only).
 
-## 通信プロトコル
+## Protocol
 
-改行区切りの JSON を Nordic UART 互換の GATT サービス（`6E400001-…`）または USB シリアル（115200bps）で送ります。
-詳細は [firmware/src/main.cpp](firmware/src/main.cpp) の先頭にあります。
+Newline-delimited JSON over a Nordic UART–compatible GATT service (`6E400001-…`) or USB serial (115200 bps).
+Details are at the top of [firmware/src/main.cpp](firmware/src/main.cpp).
 
-## 注意
+## Notes
 
-- 承認待ちのあいだ、PC 側のダイアログが同時に出るかどうかは Claude Code のバージョンによって異なる可能性があります。時計で答えられないときは長押しで PC 側に回してください。
-- BLE は現状ペアリング（暗号化）なしです。ブリッジは保存したアドレスの時計にしか接続しませんが、より厳密にしたい場合は USB シリアルで使ってください。
+- Whether the dialog on your computer also appears while a permission request is pending may depend on your Claude Code version. If you can't answer on the watch, long-press to hand it to your computer.
+- BLE currently has no pairing (no encryption). The bridge connects only to the watch address it saved, but if you want stricter security, use USB serial.
 
-## ライセンス
+## License
 
 [MIT](LICENSE)
 
-[firmware/platformio.ini](firmware/platformio.ini) のボード設定は [GOROman/vibewatch](https://github.com/GOROman/vibewatch)（MIT License, Copyright (c) 2026 GOROman）を元にしています。
+The board settings in [firmware/platformio.ini](firmware/platformio.ini) are based on [GOROman/vibewatch](https://github.com/GOROman/vibewatch) (MIT License, Copyright (c) 2026 GOROman).
