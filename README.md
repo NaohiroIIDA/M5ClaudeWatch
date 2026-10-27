@@ -21,7 +21,7 @@ Inspired by [GOROman/vibewatch](https://github.com/GOROman/vibewatch), and wired
 |:---:|:---:|:---:|:---:|
 | <img src="docs/images/idle.jpg" width="200" alt="Idle screen"> | <img src="docs/images/done.jpg" width="200" alt="Done screen with elapsed time and Claude's last message"> | <img src="docs/images/reply.jpg" width="200" alt="Waiting-for-reply screen showing Claude's question"> | <img src="docs/images/permission.jpg" width="200" alt="Permission request screen with OK / NG buttons"> |
 
-> **Note:** The watch UI and messages are currently Japanese only. Reply detection works for English questions ending with "?", but not for requests like "Please …". Contributions are welcome.
+> **Note:** The watch UI and messages are currently Japanese only. Reply detection works for English questions ending with "?", but not for requests like "Please …". Contributions are welcome. For other languages, see [Other languages](#other-languages).
 
 ```
 Claude Code ──hooks──▶ m5claudewatch_hook.py ──Unix socket──▶ m5claudewatch_bridge.py ──BLE / USB──▶ StopWatch
@@ -104,6 +104,37 @@ To enable sound effects, set `kSoundEnabled` to `true` in [firmware/src/main.cpp
 
 Newline-delimited JSON over a Nordic UART–compatible GATT service (`6E400001-…`) or USB serial (115200 bps).
 Details are at the top of [firmware/src/main.cpp](firmware/src/main.cpp).
+
+## Other languages
+
+Language-specific code lives in three places. There is no language setting yet, so fork the project and edit them directly.
+
+### 1. Reply detection (`ASK_LINE` in [host/m5claudewatch_hook.py](host/m5claudewatch_hook.py))
+
+If any line in the last paragraph of Claude's reply ends with one of the words in this regular expression, the watch shows "waiting for your reply". Trailing punctuation and brackets are ignored.
+
+- Questions ending with "?" or "？" are detected in any language (English, Chinese, Korean, French, Spanish, and so on).
+- Languages with a different question mark are not detected (Arabic and Persian "؟", Greek ";", and so on). Add the character to `[?？]`.
+- Requests without a question mark need words for each language. Japanese words such as 「ください」 are already included.
+- In languages where the request word comes first, such as English "Please …" or "Could you …", `ASK_LINE` (which looks at the end of the line) can't catch them. Add a second regular expression that looks at the start of the line, and have `asks_user()` return true if either one matches.
+
+  ```python
+  ASK_START = re.compile(r"^(please|could you|would you|can you|let me know)\b", re.I)
+  ```
+
+### 2. Watch screen ([firmware/src/main.cpp](firmware/src/main.cpp))
+
+- **Strings:** The Japanese text is written directly in the `draw...()` functions and `handleMessage()`. `grep -nP '[^\x00-\x7F]' firmware/src/main.cpp` finds all of it.
+- **Fonts:** The firmware uses Japanese fonts (`lgfxJapanGothic*`, `efontJA_*`). Claude's message is drawn with them too, so even if you keep the UI in Japanese, Hangul won't show up when Claude replies in Korean, and simplified Chinese characters that Japanese doesn't use will be missing. M5GFX also has `efontCN_*` (simplified Chinese), `efontTW_*` (traditional Chinese) and `efontKR_*` (Korean), from 10 to 24 px; swap them in.
+- **Accented letters:** é, ñ, ü and similar may not be in the Japanese fonts. Check on the device.
+- **Right-to-left languages:** The graphics library doesn't reorder text or join letters, so Arabic and Hebrew are hard to display correctly.
+- **Line wrapping:** `wrapText()` fills lines one character at a time. In languages that separate words with spaces, such as English, lines break in the middle of words (see "s hould" in the permission request photo). Breaking at spaces makes text easier to read.
+
+### 3. Hook messages ([host/m5claudewatch_hook.py](host/m5claudewatch_hook.py))
+
+- 「入力を待っています」 ("waiting for input"): shown when a Claude Code notification has no message
+- 「プランを承認しますか?」 ("approve the plan?"): shown for a plan approval that has no plan text
+- The message sent back to Claude when you press NG: Claude understands any language, so it works without changes
 
 ## Notes
 
